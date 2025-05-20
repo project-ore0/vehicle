@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up ESP-IDF
-        uses: esp-rs/esp-idf-ci-action@v1
+        uses: espressif/esp-idf-ci-action@v1
         with:
           idf_version: 'latest'
           idf_path: ${{ github.workspace }}/esp-idf
