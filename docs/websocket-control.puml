@@ -1,0 +1,44 @@
+@startuml
+
+participant ore0
+box "WebSocket Server"
+participant wsc
+participant ws
+end box
+actor user
+
+user -> ws: connect
+ws -> wsc: client_connect
+wsc -> ore0: camera (on)
+
+== Telemetry ==
+ore0 -> wsc: telemetry
+note right of ore0
+[motor1_diraction, motor2_direction, battery_percent, distance_cm]
+end note
+wsc -> ws
+ws -> user: telemetry
+
+== Camera ==
+alt camera (on)
+    ore0 -> wsc: camera stream
+    wsc -> ws
+    ws -> user: camera stream
+else camera (off)
+    note right of ore0: No video stream
+end
+
+== Control Commands ==
+
+user -> ws: move
+note right of ws
+[motor, direction]
+end note
+ws -> wsc: update move state
+wsc -> ore0: motor (m1 state, m2 state)
+
+user -> ws: disconnect
+ws -> wsc: client_disconnect
+wsc -> ore0: camera (off)
+
+@enduml

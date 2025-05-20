@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package ore0;
+
+// Message type identifiers
+enum MessageType {
+    MESSAGE_TYPE_UNSPECIFIED = 0;
+    CAMERA_CONTROL = 1;
+    MOTOR_STATE = 2;
+    MOTOR_CONTROL = 3;
+    MOVE_COMMAND = 4;
+    TELEMETRY = 5;
+    CAMERA_FRAME = 6;
+    CAMERA_CHUNK = 7;
+    DISTANCE_READING = 8;
+    BATTERY_LEVEL = 9;
+}
+
+enum Motor {
+    MOTOR_UNSPECIFIED = 0;
+    MOTOR_LEFT = 1;
+    MOTOR_RIGHT = 2;
+}
+
+enum MotorState {
+    MOTOR_STATUS_UNSPECIFIED = 0;
+    MOTOR_IDLE = 1;
+    MOTOR_FORWARD = 2;
+    MOTOR_BACKWARD = 3;
+    MOTOR_BRAKE = 4;
+}
+
+enum MoveCommandType {
+    MOVE_COMMAND_TYPE_UNSPECIFIED = 0;
+    MOVE_M1_IDLE = 1;
+    MOVE_M1_FORWARD = 2;
+    MOVE_M1_BACKWARD = 3;
+    MOVE_M1_BRAKE = 4;
+    MOVE_M2_IDLE = 5;
+    MOVE_M2_FORWARD = 6;
+    MOVE_M2_BACKWARD = 7;
+    MOVE_M2_BRAKE = 8;
+}
+
+message CameraControl {
+    bool enabled = 1;
+}
+
+message MotorState {
+    Motor motor = 1;
+    MotorState status = 2;
+}
+
+message MotorControl {
+    MotorState motor1_status = 1;
+    MotorState motor2_status = 2;
+}
+
+message MoveCommand {
+    MoveCommandType command = 1;
+}
+
+message Telemetry {
+    MotorState motor1_status = 1;
+    MotorState motor2_status = 2;
+    uint32 battery_level_percent = 3;
+    uint32 distance_cm = 4;
+    uint32 camera_fps = 5;
+}
+
+message CameraFrame {
+    bytes image = 1;
+}
+
+message CameraChunk {
+    uint32 chunk_id = 1;
+    bytes data = 2;
+}
+
+message DistanceReading {
+    uint8 distance_cm = 1;
+}
+
+message BatteryLevel {
+    uint8 percent = 1;
+}
+
+message Envelope {
+    MessageType type = 1;
+    oneof payload {
+        CameraControl camera_control = 2;
+        MotorState motor_state = 3;
+        MotorControl motor_control = 4;
+        MoveCommand move_command = 5;
+        Telemetry telemetry = 6;
+        CameraFrame camera_frame = 7;
+        CameraChunk camera_chunk = 8;
+        DistanceReading distance_reading = 9;
+        BatteryLevel battery_level = 10;
+    }
+}

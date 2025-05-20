@@ -1,0 +1,108 @@
+/* Modern, minimal, dark mode styling */
+:root {
+  --bg: #181a20;
+  --fg: #e0e0e0;
+  --accent: #4fd1c5;
+  --danger: #e53e3e;
+  --input-bg: #23262f;
+  --input-border: #353945;
+  --fieldset: #23262f;
+  --button-bg: #353945;
+  --button-hover: #4fd1c5;
+  --button-fg: #e0e0e0;
+  --button-danger: #e53e3e;
+  --button-danger-hover: #ff6b6b;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+h2, h4 {
+  margin: 0.5em 0 0.2em 0;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+form {
+  background: var(--fieldset);
+  border-radius: 10px;
+  padding: 1.2em 1.5em 1em 1.5em;
+  margin: 1.5em auto 0 auto;
+  max-width: 400px;
+  box-shadow: 0 2px 12px #0004;
+}
+
+fieldset {
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 1em 1em 0.5em 1em;
+  margin-bottom: 1em;
+}
+
+legend {
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+label {
+  display: block;
+  margin: 0.7em 0 0.2em 0;
+  font-size: 1em;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--fg);
+  border: 1px solid var(--input-border);
+  border-radius: 5px;
+  padding: 0.5em 0.7em;
+  font-size: 1em;
+  margin-bottom: 0.5em;
+  transition: border 0.2s;
+}
+input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+button {
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: none;
+  border-radius: 5px;
+  padding: 0.6em 1.5em;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+button.green {
+  background: var(--accent);
+  color: #181a20;
+}
+button.green:hover {
+  background: #38b2ac;
+}
+button.red {
+  background: var(--button-danger);
+  color: #fff;
+}
+button.red:hover {
+  background: var(--button-danger-hover);
+}
+
+@media (max-width: 500px) {
+  form {
+    padding: 1em 0.5em 0.7em 0.5em;
+    max-width: 98vw;
+  }
+}
