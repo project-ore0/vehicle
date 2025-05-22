@@ -111,11 +111,14 @@ char *app_files_render_template(const char *template_buf, size_t template_len, c
 
     // Replace placeholders with values from the context
     for (app_files_template_context_t *entry = ctx; entry != NULL; entry = entry->hh.next) {
-        char *pos = strstr(rendered_buf, entry->key);
-        if (pos) {
-            size_t key_len = strlen(entry->key);
+        char placeholder[128];
+        snprintf(placeholder, sizeof(placeholder), "{{%s}}", entry->key);
+        char *pos = strstr(rendered_buf, placeholder);
+        while (pos) {
+            size_t key_len = strlen(placeholder);
             size_t value_len = strlen(entry->value);
-            size_t new_len = template_len - key_len + value_len;
+            size_t old_len = template_len;
+            size_t new_len = old_len - key_len + value_len;
 
             char *new_buf = realloc(rendered_buf, new_len + 1);
             if (!new_buf) {
@@ -123,13 +126,17 @@ char *app_files_render_template(const char *template_buf, size_t template_len, c
                 ESP_LOGE(TAG, "Failed to allocate memory for resized template");
                 return NULL;
             }
+            // Update pointers after realloc
+            pos = new_buf + (pos - rendered_buf);
             rendered_buf = new_buf;
 
             // Shift the rest of the string
-            memmove(pos + value_len, pos + key_len, template_len - (pos - rendered_buf) - key_len + 1);
+            memmove(pos + value_len, pos + key_len, old_len - (pos - rendered_buf) - key_len + 1);
             memcpy(pos, entry->value, value_len);
 
             template_len = new_len;
+            // Look for next occurrence
+            pos = strstr(rendered_buf, placeholder);
         }
     }
 
