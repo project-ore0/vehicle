@@ -29,8 +29,7 @@ esp_err_t app_files_handler(httpd_req_t *req) {
             size_t file_size = app_files[i].end - app_files[i].start;
             
             // Check if this is an HTML file and we have a template context
-            if (app_files_template_context != NULL && 
-                (strcmp(app_files[i].content_type, "text/html") == 0 ||
+            if ((strcmp(app_files[i].content_type, "text/html") == 0 ||
                  strcmp(app_files[i].content_type, "text/htm") == 0)) {
                 ESP_LOGI(TAG, "Rendering HTML template: %s", uri);
                 
@@ -67,117 +66,73 @@ esp_err_t app_files_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-esp_err_t app_files_set_template_context(const app_files_template_context_t *ctx) {
-    if (app_files_template_context) {
-        free(app_files_template_context->kv_pairs);
-        free(app_files_template_context);
-        app_files_template_context = NULL;
+esp_err_t app_files_template_context_set(const char *key, const char *value) {
+    app_files_template_context_t *entry;
+    HASH_FIND_STR(app_files_template_context, key, entry);
+    if (entry == NULL) {
+        entry = malloc(sizeof(app_files_template_context_t));
+        strncpy(entry->key, key, sizeof(entry->key));
+        HASH_ADD_STR(app_files_template_context, key, entry);
     }
-    
-    if (!ctx) {
-        ESP_LOGI(TAG, "Template context cleared");
-        return ESP_OK;
-    }
-    
-    if (!ctx->kv_pairs || ctx->kv_count == 0) {
-        ESP_LOGE(TAG, "Invalid template context");
-        return ESP_ERR_INVALID_ARG;
-    }
-    
-    // Create a deep copy of the context
-    app_files_template_context = malloc(sizeof(app_files_template_context_t));
-    if (!app_files_template_context) {
-        ESP_LOGE(TAG, "Failed to allocate memory for template context");
-        return ESP_ERR_NO_MEM;
-    }
-    
-    app_files_template_context->kv_count = ctx->kv_count;
-    app_files_template_context->kv_pairs = malloc(ctx->kv_count * sizeof(app_files_template_kv_t));
-    if (!app_files_template_context->kv_pairs) {
-        free(app_files_template_context);
-        app_files_template_context = NULL;
-        ESP_LOGE(TAG, "Failed to allocate memory for template key-value pairs");
-        return ESP_ERR_NO_MEM;
-    }
-    
-    // Copy each key-value pair
-    for (size_t i = 0; i < ctx->kv_count; i++) {
-        strncpy(app_files_template_context->kv_pairs[i].key, ctx->kv_pairs[i].key, sizeof(app_files_template_context->kv_pairs[i].key) - 1);
-        app_files_template_context->kv_pairs[i].key[sizeof(app_files_template_context->kv_pairs[i].key) - 1] = '\0';
-        
-        strncpy(app_files_template_context->kv_pairs[i].value, ctx->kv_pairs[i].value, sizeof(app_files_template_context->kv_pairs[i].value) - 1);
-        app_files_template_context->kv_pairs[i].value[sizeof(app_files_template_context->kv_pairs[i].value) - 1] = '\0';
-    }
-    
-    ESP_LOGI(TAG, "Template context set with %d key-value pairs", ctx->kv_count);
+    strncpy(entry->value, value, sizeof(entry->value));
     return ESP_OK;
+}
+
+const char *app_files_template_context_get(const char *key) {
+    app_files_template_context_t *entry;
+    HASH_FIND_STR(app_files_template_context, key, entry);
+    return entry ? entry->value : NULL;
+}
+
+void app_files_template_context_clear() {
+    app_files_template_context_t *current, *tmp;
+    HASH_ITER(hh, app_files_template_context, current, tmp) {
+        HASH_DEL(app_files_template_context, current);
+        free(current);
+    }
 }
 
 // Generic template rendering function
 char *app_files_render_template(const char *template_buf, size_t template_len, const app_files_template_context_t *ctx, size_t *out_len) {
-    if (!template_buf || !ctx || !ctx->kv_pairs || ctx->kv_count == 0) {
-        // Just copy the template as-is
-        char *out = malloc(template_len + 1);
-        if (!out) return NULL;
-        memcpy(out, template_buf, template_len);
-        out[template_len] = '\0';
-        if (out_len) *out_len = template_len;
-        return out;
+    if (!template_buf || !ctx || !out_len) {
+        ESP_LOGE(TAG, "Invalid arguments to render_template");
+        return NULL;
     }
-    
-    // Estimate output size: template_len + extra space for replacements
-    // Each key might be replaced with a value that's longer
-    size_t max_extra = ctx->kv_count * 256;
-    size_t out_buf_size = template_len + max_extra + 1;
-    char *out = malloc(out_buf_size);
-    if (!out) return NULL;
-    
-    const char *src = template_buf;
-    char *dst = out;
-    size_t remain = out_buf_size - 1;
-    
-    // Define the template patterns we support
-    const char *patterns[] = {
-        "{{ %s }}",  // Mustache/Jinja2 style
-        "{%s}",      // Simple style
-        "<!--%s-->", // HTML comment style
-        "$(%s)"      // Shell style
-    };
-    const int num_patterns = sizeof(patterns) / sizeof(patterns[0]);
-    
-    while (*src && remain > 0) {
-        int replaced = 0;
-        
-        // Try each key with each pattern
-        for (size_t i = 0; i < ctx->kv_count && !replaced; ++i) {
-            for (int p = 0; p < num_patterns && !replaced; p++) {
-                char keypat[64];
-                snprintf(keypat, sizeof(keypat), patterns[p], ctx->kv_pairs[i].key);
-                size_t klen = strlen(keypat);
-                
-                if (strncmp(src, keypat, klen) == 0) {
-                    // Found a match, replace with the value
-                    size_t vlen = strnlen(ctx->kv_pairs[i].value, sizeof(ctx->kv_pairs[i].value));
-                    if (vlen > remain) vlen = remain;
-                    
-                    memcpy(dst, ctx->kv_pairs[i].value, vlen);
-                    dst += vlen;
-                    src += klen;
-                    remain -= vlen;
-                    replaced = 1;
-                    
-                    ESP_LOGI(TAG, "Replaced '%s' with '%s'", keypat, ctx->kv_pairs[i].value);
-                }
+
+    char *rendered_buf = malloc(template_len + 1);
+    if (!rendered_buf) {
+        ESP_LOGE(TAG, "Failed to allocate memory for rendered template");
+        return NULL;
+    }
+
+    // Copy the original template buffer to the rendered buffer
+    memcpy(rendered_buf, template_buf, template_len);
+    rendered_buf[template_len] = '\0';
+
+    // Replace placeholders with values from the context
+    for (app_files_template_context_t *entry = ctx; entry != NULL; entry = entry->hh.next) {
+        char *pos = strstr(rendered_buf, entry->key);
+        if (pos) {
+            size_t key_len = strlen(entry->key);
+            size_t value_len = strlen(entry->value);
+            size_t new_len = template_len - key_len + value_len;
+
+            char *new_buf = realloc(rendered_buf, new_len + 1);
+            if (!new_buf) {
+                free(rendered_buf);
+                ESP_LOGE(TAG, "Failed to allocate memory for resized template");
+                return NULL;
             }
-        }
-        
-        if (!replaced) {
-            *dst++ = *src++;
-            --remain;
+            rendered_buf = new_buf;
+
+            // Shift the rest of the string
+            memmove(pos + value_len, pos + key_len, template_len - (pos - rendered_buf) - key_len + 1);
+            memcpy(pos, entry->value, value_len);
+
+            template_len = new_len;
         }
     }
-    
-    *dst = '\0';
-    if (out_len) *out_len = dst - out;
-    return out;
+
+    *out_len = template_len;
+    return rendered_buf;
 }

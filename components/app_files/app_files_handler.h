@@ -3,6 +3,7 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
+#include "uthash.h"
 
 /**
  * @brief Represents a key-value pair for templating
@@ -12,30 +13,9 @@
 typedef struct {
     char key[32];    /**< The key to search for in templates */
     char value[224]; /**< The value to replace the key with */
-} app_files_template_kv_t;
-
-/**
- * @brief Represents a context for templating, a list of key-value pairs
- * 
- * This structure is used to pass a list of key-value pairs to the template rendering function.
- */
-typedef struct {
-    app_files_template_kv_t *kv_pairs; /**< Array of key-value pairs */
-    size_t kv_count;                   /**< Number of key-value pairs in the array */
+    UT_hash_handle hh; /**< Makes this structure hashable */
 } app_files_template_context_t;
 
-
-/**
- * @brief Set the template context for HTML rendering
- * 
- * This function sets the template context that will be used when rendering HTML files.
- * The context is a list of key/value pairs that will be used to replace placeholders in HTML files.
- * The function makes a deep copy of the context, so the caller can free the context after calling this function.
- * 
- * @param ctx The template context to set, or NULL to clear the context
- * @return esp_err_t ESP_OK on success, or an error code on failure
- */
-esp_err_t app_files_set_template_context(const app_files_template_context_t *ctx);
 
 /**
  * @brief HTTP request handler for serving static files
@@ -48,6 +28,14 @@ esp_err_t app_files_set_template_context(const app_files_template_context_t *ctx
  * @return esp_err_t ESP_OK on success, or an error code on failure
  */
 esp_err_t app_files_handler(httpd_req_t *req);
+
+
+esp_err_t app_files_template_context_set(const char *key, const char *value);
+
+const char *app_files_template_context_get(const char *key);
+
+void app_files_template_context_clear();
+
 
 /**
  * @brief Render a template buffer with key/value pairs

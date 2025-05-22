@@ -6,7 +6,9 @@ def symbol_name_sanitize(str):
     return str.replace('/', '_').replace('.', '_').replace('-', '_')
 
 def symbol_name(component_name, path):
-    return "_binary_components_" + symbol_name_sanitize(component_name) + "_" + symbol_name_sanitize(path)
+    # Format: _binary_<filename>_start/_end
+    filename = path.split('/')[-1]
+    return "_binary_" + symbol_name_sanitize(filename)
 
 def content_type(filename):
     ext = filename.rsplit('.', 1)[-1].lower()
