@@ -1,19 +1,31 @@
 
+include(${PROJECT_DIR}/managed_components/albkharisov__esp_google_protobuf/cmake/ProtobufConfig.cmake)
 
-# 1) Discover all .proto files under your component
-discover_proto_files(
-    PROTO_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/proto"
-    GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated"
-)
+set(DIR_GEN "${CMAKE_CURRENT_SOURCE_DIR}/generated")
+set(ADDITIONAL_PROTO google/protobuf/any.proto)
 
-# 2) Register the component, including C++ sources (.cc) and headers
+list(APPEND PROTO_DIRS ".")
+
+discover_proto_files(PROTO_SRC, PROTO_GEN, "${PROTO_DIRS}" ${DIR_GEN} ${ADDITIONAL_PROTO})
+message(STATUS "found proto: ")
+foreach(line IN LISTS PROTO_SRC)
+    message(STATUS "\t${line}")
+endforeach()
+foreach(file IN LISTS PROTO_GEN)
+    get_filename_component(dir ${file} DIRECTORY)
+    make_directory(${dir})
+    file(TOUCH ${file})
+endforeach()
+
+set(PROTO_INC ${GENERATED_DIR})
+
 idf_component_register(
-    SRCS "${PROTO_SRCS}"          # generated pb.cc files
-         "src/libprotobuf-lite.a" # or prebuilt library
-    INCLUDE_DIRS "include"
-    PRIV_REQUIRES
-        # list any IDF or other components
+    INCLUDE_DIRS
+        "${PROTO_INC}"
+    SRCS
+        ${PROTO_GEN}
+    REQUIRES
+        albkharisov__esp_google_protobuf
 )
 
-# 3) Add host-side protoc generation target
-add_proto_generation()
+add_proto_generation("${PROTO_DIRS}" "${PROTO_SRC}" ${GENERATED_DIR})

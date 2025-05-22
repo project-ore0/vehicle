@@ -1,4 +1,3 @@
-
 #include <dirent.h>
 #include "esp_err.h"
 #include "esp_log.h"
@@ -154,8 +153,13 @@ unsigned char *_spiffs_read(const char *path, size_t *length_out)
         ESP_LOGE(TAG, "Out of memory reading %s", path);
         return NULL;
     }
-    fread(buf, 1, len, f);
+    size_t nread = fread(buf, 1, len, f);
     fclose(f);
+    if (nread != len) {
+        ESP_LOGE(TAG, "Partial read of %s: expected %zu, got %zu", path, len, nread);
+        free(buf);
+        return NULL;
+    }
     buf[len] = '\0';
     if (length_out)
         *length_out = len + 1;
@@ -232,6 +236,9 @@ esp_err_t httpx_server_create(httpx_server_t **server)
 
 esp_err_t httpx_server_destroy(httpx_server_t *server)
 {
+    if (!server) {
+        return ESP_ERR_INVALID_ARG;
+    }
     if (server->http)
     {
         httpd_stop(server->http);
@@ -281,20 +288,20 @@ esp_err_t httpx_parse_form_field(const char *body, const char *key, char *out, s
         return ESP_ERR_INVALID_ARG;
     }
     size_t key_len = strlen(key);
-    const char *p = strstr(body, key);
-    if (!p)
-    {
+    const char *p = body;
+    while ((p = strstr(p, key)) != NULL) {
+        // Ensure key is at the start or after '&'
+        if ((p == body || *(p - 1) == '&') && strncmp(p, key, key_len) == 0 && p[key_len] == '=') {
+            p += key_len + 1; // skip key and '='
+            break;
+        }
+        p += key_len;
+    }
+    if (!p) {
         ESP_LOGE(TAG, "Key not found in body");
         return ESP_ERR_HTTPD_INVALID_REQ;
     }
-    p += key_len;
-    if (*p != '=')
-    {
-        ESP_LOGE(TAG, "Key not followed by '='");
-        return ESP_ERR_HTTPD_INVALID_REQ;
-    }
     char out_tmp[512];
-    p++;
     size_t j = 0;
     for (; *p && *p != '&' && j < sizeof(out_tmp) - 1; ++p)
     {
