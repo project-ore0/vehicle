@@ -17,3 +17,4 @@ dependencies:
   espressif/esp32-camera: ^2.0.15
   espressif/esp_websocket_client: ^1.4.0
   albkharisov/esp_google_protobuf: "^1.0.7"
+  vgerwen/hcsr04: "^1.0.0"

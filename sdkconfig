@@ -2129,6 +2129,13 @@ CONFIG_CAMERA_JPEG_MODE_FRAME_SIZE_AUTO=y
 #
 # CONFIG_ESP_WS_CLIENT_ENABLE_DYNAMIC_BUFFER is not set
 # end of ESP WebSocket client
+
+#
+# HC SR04 menu
+#
+CONFIG_TRIGGER_PIN=33
+CONFIG_ECHO_PIN=32
+# end of HC SR04 menu
 # end of Component config
 
 # CONFIG_IDF_EXPERIMENTAL_FEATURES is not set

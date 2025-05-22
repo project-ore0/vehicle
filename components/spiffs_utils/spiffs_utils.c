@@ -10,13 +10,13 @@ static const char *TAG = "SPIFFS_UTILS";
 
 void init_spiffs(void) {
     esp_vfs_spiffs_conf_t conf = {
-        .base_path = "/spiffs",
-        .partition_label = NULL,
+        .base_path = "/data",
+        .partition_label = "data",
         .max_files = 5,
         .format_if_mount_failed = true
     };
     esp_vfs_spiffs_register(&conf);
-    ESP_LOGI(TAG, "SPIFFS mounted");
+    ESP_LOGI(TAG, "SPIFFS data/ mounted");
 }
 
 void list_spiffs_files(const char *base_path) {

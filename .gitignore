@@ -1,5 +1,5 @@
 build/
-**/certs/
+**/cert/
 
 build_host_protoc/
 managed_components/
